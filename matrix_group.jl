@@ -1,5 +1,4 @@
 using GroupsCore
-import PermutationGroups
 using SumOfSquares
 using LinearAlgebra
 using SymbolicWedderburn
@@ -20,15 +19,6 @@ Base.conj(a::MatGrpElement, b::MatGrpElement) = inv(b) * a * b
 Base.:^(a::MatGrpElement, b::MatGrpElement) = conj(a, b)
 Base.deepcopy_internal(el::MatGrpElement, ::IdDict) = MatGrpElement(deepcopy(el.matrix), el.G)
 
-function PermutationGroups.order(el::MatGrpElement)
-    for i=1:100
-        if el^i == one(el) # stupid but it works
-            return i
-        end
-    end
-    throw("Could not compute order")
-end
-
 struct MatrixGroup{T} <: Group
     generators::Vector{MatGrpElement{T}}
     elements::Vector{MatGrpElement{T}}
@@ -37,8 +27,8 @@ Base.eltype(::MatrixGroup{T}) where T = MatGrpElement{T}
 Base.one(G::MatrixGroup) = MatGrpElement(one(G.generators[1].matrix), G)
 Base.one(c::MatGrpElement) = MatGrpElement(one(c.matrix), c.G)
 Base.isfinite(::MatrixGroup) = true
-PermutationGroups.gens(c::MatrixGroup) = c.generators
-PermutationGroups.order(::Type{T}, c::MatrixGroup) where {T} = convert(T, length(c.elements))
+GroupsCore.gens(c::MatrixGroup) = c.generators
+GroupsCore.order(::Type{T}, c::MatrixGroup) where {T} = convert(T, length(c.elements))
 Base.iterate(c::MatrixGroup, state) = Base.iterate(c.elements, state)
 Base.iterate(c::MatrixGroup) = Base.iterate(c.elements)
 
@@ -77,7 +67,7 @@ end
 
 
 # See https://github.com/jump-dev/SumOfSquares.jl/issues/387
-import SumOfSquares.Symmetry: block_diag, isblockdim, ordered_block_check, ordered_block_diag
+import SumOfSquares.Symmetry: block_diag, isblockdim, ordered_block_check, ordered_block_diag, orthogonal_transformation_to
 function Symmetry.ordered_block_diag(As, d)
     function clean!(M, tol=1e-15)
         M[abs.(M) .< tol] .= 0
