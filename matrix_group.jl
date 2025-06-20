@@ -3,6 +3,7 @@ using SumOfSquares
 using LinearAlgebra
 using SymbolicWedderburn
 import StarAlgebras
+using DynamicPolynomials
 
 # This is all messy but essentially it's a layer for using matrix groups as symmetry groups in the SymbolicWedderburn.jl package.
 
@@ -32,13 +33,12 @@ GroupsCore.order(::Type{T}, c::MatrixGroup) where {T} = convert(T, length(c.elem
 Base.iterate(c::MatrixGroup, state) = Base.iterate(c.elements, state)
 Base.iterate(c::MatrixGroup) = Base.iterate(c.elements)
 
-import MultivariatePolynomials as MP
-struct MatrixAction{V<:MP.AbstractVariable} <: Symmetry.OnMonomials
+struct MatrixAction{V} <: Symmetry.OnMonomials
     variables::Vector{V}
 end
 Symmetry.SymbolicWedderburn.coeff_type(::MatrixAction) = Float64
 
-function Symmetry.SymbolicWedderburn.action(a::MatrixAction, el::MatGrpElement, mono::MP.AbstractMonomial)
+function Symmetry.SymbolicWedderburn.action(a::MatrixAction, el::MatGrpElement, mono::AbstractMonomial)
     return subs(mono, a.variables=>el.matrix*a.variables)
 end
 
@@ -64,52 +64,31 @@ function invariant_polynomials(G::MatrixGroup{T}, action::MatrixAction, raw_poly
     return [dot(v, raw_polynomials) for v in invariants]
 end
 
+"""
+    make_tangent_symmetries(n, k, symmetries)
+Given a set of symmetry generators for the basic dynamical system, expands them to the full augmented system.
+"""
+function make_tangent_symmetries(n, k, symmetries)
+    T = eltype(symmetries[1])
+    expandedsymmetries = Vector{Matrix{Int}}()
+
+    m = binomial(n,k)
+    
+    signsymmetry = [I zeros(Int, n,m); zeros(Int, m,n) -I] # additional symmetry for the linear tangent dynamics
+
+    push!(expandedsymmetries, signsymmetry)
 
 
-# See https://github.com/jump-dev/SumOfSquares.jl/issues/387
-import SumOfSquares.Symmetry: block_diag, isblockdim, ordered_block_check, ordered_block_diag, orthogonal_transformation_to
-function Symmetry.ordered_block_diag(As, d)
-    function clean!(M, tol=1e-15)
-        M[abs.(M) .< tol] .= 0
-    end
+    for symmetry in symmetries
+        @assert(n == size(symmetry,1))
+        @assert(n == size(symmetry,2))
 
-    for A in As
-        clean!(A)
-    end
+        expandedsymmetry = zeros(T, n + m, n + m)
+        expandedsymmetry[1:n,1:n] = symmetry
+        expandedsymmetry[n+1:end,n+1:end] = mult_comp(symmetry, k)
 
-    U = block_diag(As, d)
-    isnothing(U) && return nothing
-    iU = U'
-    @assert iU ≈ inv(U)
-    Bs = [iU * A * U for A in As]
-    @assert all(Bs) do B
-        return isblockdim(B, d)
+        push!(expandedsymmetries, expandedsymmetry)
     end
-    refs = [B[1:d, 1:d] for B in Bs]
-    offset = d
-    for offset in d:d:(size(U, 1)-d)
-        I = offset .+ (1:d)
-        Cs = [B[I, I] for B in Bs]
-        λ = rand(length(Bs))
-        # We want to find a transformation such that
-        # the blocks `Cs` are equal to the blocks `refs`
-        # With probability one, making a random combination match
-        # should work, this trick is similar to [CGT97].
-        #
-        # [CGT97] Corless, R. M.; Gianni, P. M. & Trager, B. M.
-        # A reordered Schur factorization method for zero-dimensional polynomial systems with multiple roots
-        # Proceedings of the 1997 international symposium on Symbolic and algebraic computation,
-        # 1997, 133-140
-        R = sum(λ .* refs)
-        C = sum(λ .* Cs)
-        V = orthogonal_transformation_to(R, C)
-        @assert R ≈ V' * C * V
-        for i in eachindex(refs)
-            @assert refs[i] ≈ V' * Cs[i] * V
-        end
-        U[:, I] = U[:, I] * V
-        offset += d
-    end
-    @assert ordered_block_check(U, As, d)
-    return U
+      
+    return expandedsymmetries
 end

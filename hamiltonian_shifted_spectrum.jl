@@ -1,5 +1,5 @@
 using SumOfSquares
-using Clarabel
+using MosekTools
 
 include("compoundmatrices.jl")
 include("matrix_group.jl")
@@ -12,37 +12,6 @@ function make_symmetric_basis(x, wk, symmetry_group, deg)
     raw_basis = kron(monomials(x, 0:deg), monomials(wk, 2:2))
     return invariant_polynomials(symmetry_group, MatrixAction([x; wk]), raw_basis)
 end
-
-
-"""
-    make_tangent_symmetries(n, k, symmetries)
-Given a set of symmetry generators for the basic dynamical system, expands them to the full augmented system.
-"""
-function make_tangent_symmetries(n, k, symmetries)
-    T = eltype(symmetries[1])
-    expandedsymmetries = Vector{Matrix{Int}}()
-
-    m = binomial(n,k)
-    
-    signsymmetry = [I zeros(Int, n,m); zeros(Int, m,n) -I] # additional symmetry for the linear tangent dynamics
-
-    push!(expandedsymmetries, signsymmetry)
-
-
-    for symmetry in symmetries
-        @assert(n == size(symmetry,1))
-        @assert(n == size(symmetry,2))
-
-        expandedsymmetry = zeros(T, n + m, n + m)
-        expandedsymmetry[1:n,1:n] = symmetry
-        expandedsymmetry[n+1:end,n+1:end] = mult_comp(symmetry, k)
-
-        push!(expandedsymmetries, expandedsymmetry)
-    end
-      
-    return expandedsymmetries
-end
-
 
 function try_bound(B, k, degree)
     d=3 # Hamiltonian DoFs
@@ -101,7 +70,7 @@ function try_bound(B, k, degree)
     println("Symmetry group has $(length(symmetry_group)) elements")
 
     # Define the SOS program
-    model = SOSModel(Clarabel.Optimizer)
+    model = SOSModel(MosekTools.Optimizer)
 
     V_basis = make_symmetric_basis(x, wk, symmetry_group, degree)
     rho1_basis = make_symmetric_basis(x, wk, symmetry_group, max(degree-4, 0))
@@ -116,16 +85,21 @@ function try_bound(B, k, degree)
     LV = dot(differentiate(V, X), F) # Lie derivative of Lyapunov function
 
     pattern = Symmetry.Pattern(symmetry_group, MatrixAction(X))
-    @constraint(model, V >= dot(wk, wk) + rho1a*(H(x)-E) + rho2a*(2 - dot(x,x)), symmetry=pattern)
-    @constraint(model, -LV >= rho1b*(H(x)-E) + rho2b*(2 - dot(x,x)), symmetry=pattern)
-    @constraint(model, rho2a>=0, symmetry=pattern)
-    @constraint(model, rho2b>=0, symmetry=pattern)
+    @constraint(model, V >= dot(wk, wk) + rho1a*(H(x)-E) + rho2a*(2 - dot(x,x)), sparsity=Sparsity.SignSymmetry())
+    @constraint(model, -LV >= rho1b*(H(x)-E) + rho2b*(2 - dot(x,x)), sparsity=Sparsity.SignSymmetry())
+    @constraint(model, rho2a>=0, sparsity=Sparsity.SignSymmetry())
+    @constraint(model, rho2b>=0, sparsity=Sparsity.SignSymmetry())
 
     optimize!(model)
 
     display(solution_summary(model))
 end
 
+# try_bound(0.496, 1, 2) # feasible
+# try_bound(0.496, 1, 2) # infeasible
+
 # try_bound(0.4291, 1, 4) # infeasible
 # try_bound(0.4292, 1, 4) # feasible
 
+# try_bound(1.02, 2, 2) # feasible
+# try_bound(1.01, 2, 2) # infeasible
