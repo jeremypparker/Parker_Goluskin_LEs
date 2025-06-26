@@ -68,8 +68,7 @@ end
     make_tangent_symmetries(n, k, symmetries)
 Given a set of symmetry generators for the basic dynamical system, expands them to the full augmented system.
 """
-function make_tangent_symmetries(n, k, symmetries)
-    T = eltype(symmetries[1])
+function make_tangent_symmetries(n, k, symmetries::Vector{Matrix{T}}) where T
     expandedsymmetries = Vector{Matrix{Int}}()
 
     m = binomial(n,k)
@@ -86,6 +85,42 @@ function make_tangent_symmetries(n, k, symmetries)
         expandedsymmetry = zeros(T, n + m, n + m)
         expandedsymmetry[1:n,1:n] = symmetry
         expandedsymmetry[n+1:end,n+1:end] = mult_comp(symmetry, k)
+
+        push!(expandedsymmetries, expandedsymmetry)
+    end
+      
+    return expandedsymmetries
+end
+
+"""
+    make_2_tangent_symmetries(n, k1, k2, symmetries)
+Given a set of symmetry generators for the basic dynamical system, expands them to the full augmented system for dimension
+"""
+function make_2_tangent_symmetries(n, k1, k2, symmetries)
+    T = eltype(symmetries[1])
+    expandedsymmetries = Vector{Matrix{Int}}()
+
+    m1 = binomial(n,k1)
+    m2 = binomial(n,k2)
+    
+    signsymmetry1 = [I zeros(Int, n,m1+m2); 
+                    zeros(Int, m1, n) -I zeros(Int, m1, m2);
+                    zeros(Int, m2, n+m1) I]
+    signsymmetry2 = [I zeros(Int, n,m1+m2); 
+                    zeros(Int, m1, n) I zeros(Int, m1, m2);
+                    zeros(Int, m2, n+m1) -I]
+
+    push!(expandedsymmetries, signsymmetry1)
+    push!(expandedsymmetries, signsymmetry2)
+
+    for symmetry in symmetries
+        @assert(n == size(symmetry,1))
+        @assert(n == size(symmetry,2))
+
+        expandedsymmetry = zeros(T, n + m1 + m2, n + m1 + m2)
+        expandedsymmetry[1:n,1:n] = symmetry
+        expandedsymmetry[n+1:n+m1,n+1:n+m1] = mult_comp(symmetry, k1)
+        expandedsymmetry[n+m1+1:n+m1+m2,n+m1+1:n+m1+m2] = mult_comp(symmetry, k2)
 
         push!(expandedsymmetries, expandedsymmetry)
     end
