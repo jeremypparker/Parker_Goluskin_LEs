@@ -73,8 +73,11 @@ function try_bound(B, k, degree)
     model = SOSModel(MosekTools.Optimizer)
 
     V_basis = make_symmetric_basis(x, wk, symmetry_group, degree)
-    rho1_basis = make_symmetric_basis(x, wk, symmetry_group, max(degree-4, 0))
-    rho2_basis = make_symmetric_basis(x, wk, symmetry_group, max(degree-2, 0))
+    println("Size of V basis: $(length(V_basis))")
+    rho1_basis = make_symmetric_basis(x, wk, symmetry_group, degree-2)
+    println("Size of rho1 basis: $(length(rho1_basis))")
+    rho2_basis = make_symmetric_basis(x, wk, symmetry_group, degree)
+    println("Size of rho2 basis: $(length(rho2_basis))")
 
     V = dot(V_basis, @variable(model, [1:length(V_basis)])) # Lyapunov function
     rho1a = dot(rho1_basis, @variable(model, [1:length(rho1_basis)])) # s procedure function
