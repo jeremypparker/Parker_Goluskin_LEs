@@ -76,7 +76,7 @@ function try_bound(B, k, degree)
     println("Size of V basis: $(length(V_basis))")
     rho1_basis = make_symmetric_basis(x, wk, symmetry_group, degree-2)
     println("Size of rho1 basis: $(length(rho1_basis))")
-    rho2_basis = make_symmetric_basis(x, wk, symmetry_group, degree)
+    rho2_basis = V_basis # make_symmetric_basis(x, wk, symmetry_group, degree)
     println("Size of rho2 basis: $(length(rho2_basis))")
 
     V = dot(V_basis, @variable(model, [1:length(V_basis)])) # Lyapunov function

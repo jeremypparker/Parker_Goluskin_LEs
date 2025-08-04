@@ -8,9 +8,17 @@ include("matrix_group.jl")
 function make_symmetric_basis(x, zk, symmetry_group, degx, degz)
     raw_basis = kron(monomials(x, 0:degx), monomials(zk, 0:degz))
 
-    raw_basis = filter(p -> degree(p) <= max(degx, degz), raw_basis)
+    #raw_basis = filter(p -> degree(p) <= max(degx, degz), raw_basis)
 
     return invariant_polynomials(symmetry_group, MatrixAction([x; zk]), raw_basis)
+end
+
+function filter_basis(x, zk, basis, degx, degz)
+    return [
+        p for p in basis if maximum(sum(maxdegree(term, xvar) for xvar in x) for term in p) <= degx && 
+                            maximum(sum(maxdegree(term, zvar) for zvar in zk) for term in p)  <= degz# &&
+        #                    maxdegree(p) <= max(degx, degz)
+    ]
 end
 
 function optimise_bound(k, degreex, degreez)
@@ -74,10 +82,10 @@ function optimise_bound(k, degreex, degreez)
     # Define the SOS program
     model = SOSModel(MosekTools.Optimizer)
 
-    V_basis = make_symmetric_basis(x, zk, symmetry_group, degreex, degreez)
-    rho1_basis = make_symmetric_basis(x, zk, symmetry_group, degreex, degreez)
-    rho2_basis = make_symmetric_basis(x, zk, symmetry_group, degreex, degreez)
-    rho3_basis = make_symmetric_basis(x, zk, symmetry_group, degreex, degreez)
+    rho3_basis = make_symmetric_basis(x, zk, symmetry_group, degreex+2, degreez)
+    rho2_basis = make_symmetric_basis(x, zk, symmetry_group, degreex, degreez+2)
+    rho1_basis = filter_basis(x, zk, rho2_basis, degreex-2, degreez+2)
+    V_basis = filter_basis(x, zk, rho3_basis, degreex, degreez)
 
     V = dot(V_basis, @variable(model, [1:length(V_basis)])) # Lyapunov function
     rho1 = dot(rho1_basis, @variable(model, [1:length(rho1_basis)])) # s procedure function
