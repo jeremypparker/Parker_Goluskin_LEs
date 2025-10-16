@@ -52,8 +52,8 @@ function optimise_bound(k, degreex, degreez)
     model = SOSModel(MosekTools.Optimizer)
 
     V_basis = make_symmetric_basis(x, zk, zk1, symmetry_group, degreex, degreez)
-    rho1_basis = make_symmetric_basis(x, zk, zk1, symmetry_group, degreex, degreez)
-    rho2_basis = make_symmetric_basis(x, zk, zk1, symmetry_group, degreex, degreez)
+    rho1_basis = make_symmetric_basis(x, zk, zk1, symmetry_group, degreex, degreez+2)
+    rho2_basis = make_symmetric_basis(x, zk, zk1, symmetry_group, degreex+2, degreez)
 
     V = dot(V_basis, @variable(model, [1:length(V_basis)])) # Lyapunov function
     rho1 = dot(rho1_basis, @variable(model, [1:length(rho1_basis)])) # s procedure function
@@ -71,9 +71,14 @@ function optimise_bound(k, degreex, degreez)
     display(value(B))
 end
 
-# optimise_bound(3, 2, 2) 0.9999246874355149
-# optimise_bound(3, 4, 2) 0.9991027769820908
-# optimise_bound(3, 4, 2) 0.8236075679377035
-# optimise_bound(3, 4, 4) 0.8161607655168013
-# optimise_bound(3, 6, 2) 0.8161588998086654
-# optimise_bound(3, 6, 4) 0.8161589808323491
+# 3 0 0 0.9999999685268203
+# 3 0 2 0.9999999989751758
+# 3 0 4 0.9999999393164265
+# 3 2 0 0.9911563282469733
+# 3 2 2 0.9773056983064746
+# 3 2 4 0.9613032695606576
+# 3 4 0 0.8723191888921445
+# 3 4 2 0.8161588551084759
+# 3 4 4 0.8161589481735789
+# 3 6 0 0.8554377297696145
+# 3 6 2 0.8161588727945186

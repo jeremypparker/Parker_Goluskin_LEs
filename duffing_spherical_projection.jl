@@ -50,12 +50,8 @@ function optimise_bound(k, degreex, degreez)
     model = SOSModel(MosekTools.Optimizer)
 
     V_basis = make_symmetric_basis(x, zk, symmetry_group, degreex, degreez)
-    rho1_basis = make_symmetric_basis(x, zk, symmetry_group, degreex, degreez)
-    rho2_basis = make_symmetric_basis(x, zk, symmetry_group, degreex, degreez)
-
-    display(V_basis)
-    display(rho1_basis)
-    display(rho2_basis)
+    rho1_basis = make_symmetric_basis(x, zk, symmetry_group, degreex, degreez+2)
+    rho2_basis = make_symmetric_basis(x, zk, symmetry_group, degreex+2, degreez)
 
     V = dot(V_basis, @variable(model, [1:length(V_basis)])) # Lyapunov function
     rho1 = dot(rho1_basis, @variable(model, [1:length(rho1_basis)])) # s procedure function
@@ -63,7 +59,7 @@ function optimise_bound(k, degreex, degreez)
 
     LV = dot(differentiate(V, X), F) # Lie derivative of Lyapunov function
 
-    @variable(model, B >= 0)
+    @variable(model, B)
     @constraint(model, B - Phik + LV >= rho1*(x[3]^2+x[4]^2-1) + rho2*(1 - dot(zk,zk)), sparsity=Sparsity.SignSymmetry())
     @objective(model, Min, B)
     optimize!(model)
@@ -72,10 +68,3 @@ function optimise_bound(k, degreex, degreez)
     display(value(B))
 end
 
-# optimise_bound(1, 6, 4) 0.8878973210048987
-# optimise_bound(1, 4, 4) 0.8879016764926936
-# optimise_bound(1, 4, 2) 0.9319690701279816
-# optimise_bound(1, 4, 0) 1.3819711905017877
-# optimise_bound(1, 4, 6) 0.8878973586069243
-# optimise_bound(1, 6, 2) 0.8878973136596053
-# optimise_bound(1, 6, 0) 1.2049698698780544

@@ -98,11 +98,18 @@ function try_bound(B, k, degree)
     display(solution_summary(model))
 end
 
-# try_bound(0.496, 1, 2) # feasible
-# try_bound(0.496, 1, 2) # infeasible
+# try_bound(0.4311, 1, 2) # feasible
+# try_bound(0.4310, 1, 2) # infeasible
 
-# try_bound(0.4291, 1, 4) # infeasible
 # try_bound(0.4292, 1, 4) # feasible
+# try_bound(0.4291, 1, 4) # infeasible
 
-# try_bound(1.02, 2, 2) # feasible
-# try_bound(1.01, 2, 2) # infeasible
+# try_bound(0.6141, 2, 2) # feasible
+# try_bound(0.6140, 2, 2) # infeasible
+
+# try_bound(0.5184, 2, 4) # feasible
+# try_bound(0.5183, 2, 4) # infeasible?
+
+# try_bound(0.7579, 3, 2) # feasible
+# try_bound(0.7578, 3, 2) # infeasible
+

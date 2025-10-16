@@ -4,12 +4,15 @@ using MosekTools
 include("compoundmatrices.jl")
 include("matrix_group.jl")
 
-function make_symmetric_basis(x, wk, symmetry_group, deg)
-    raw_basis = kron(monomials(x, 0:deg), monomials(wk, 2:2))
-    return invariant_polynomials(symmetry_group, MatrixAction([x; wk]), raw_basis)
+function make_symmetric_basis(x, y, w, symmetry_group, degx, degy)
+    raw_basis = kron(monomials(x, 0:degx), monomials(y, 0:degy), monomials(w, 2:2))
+
+    raw_basis = filter(p -> degree(p) <= max(degx, degy) + 2, raw_basis)
+
+    return invariant_polynomials(symmetry_group, MatrixAction([x; y; w]), raw_basis)
 end
 
-function try_bound(B, k, degree)
+function try_bound(B, k, degx, degy)
     n = 4
     @polyvar x[1:n]
     @polyvar y[1:binomial(n,k+1)]
@@ -49,21 +52,25 @@ function try_bound(B, k, degree)
     # Define the SOS program
     model = SOSModel(MosekTools.Optimizer)
 
-    V_basis = make_symmetric_basis([x;y], w, symmetry_group, degree)
-    rho1_basis = make_symmetric_basis([x;y], w, symmetry_group, degree)
+    V_basis = make_symmetric_basis(x, y, w, symmetry_group, degx, degy)
+    rho1_basis = make_symmetric_basis(x, y, w, symmetry_group, degx-2, degy)
+    rho2_basis = make_symmetric_basis(x, y, w, symmetry_group, degx, degy+2)
 
     V = dot(V_basis, @variable(model, [1:length(V_basis)])) # Lyapunov function
-    rho1a = dot(rho1_basis, @variable(model, [1:length(rho1_basis)])) # s procedure function
-    rho1b = dot(rho1_basis, @variable(model, [1:length(rho1_basis)])) # s procedure function
+    rho1 = dot(rho1_basis, @variable(model, [1:length(rho1_basis)])) # s procedure function
+    rho2 = dot(rho2_basis, @variable(model, [1:length(rho2_basis)])) # s procedure function
 
     y2LV = dot(differentiate(V, X), y2F) # Lie derivative of Lyapunov function
 
-    @constraint(model, V >= dot(w, w) + rho1a*(x[3]^2+x[4]^2-1), sparsity=Sparsity.SignSymmetry())
-    @constraint(model, -y2LV >= rho1b*(x[3]^2+x[4]^2-1), sparsity=Sparsity.SignSymmetry())
+    @constraint(model, V >= dot(w, w) + rho1*(x[3]^2+x[4]^2-1), sparsity=Sparsity.SignSymmetry())
+    @constraint(model, -y2LV >= rho2*(x[3]^2+x[4]^2-1), sparsity=Sparsity.SignSymmetry())
     optimize!(model)
 
     display(solution_summary(model))
 end
 
-# try_bound(0.8162, 3, 6) reports feasible
-# try_bound(0.8161, 3, 6) does not
+
+# numerics crappy with deg = 4 for some reason
+
+# try_bound(0.8162, 3, 6, 0) feasible by my thesholds
+# try_bound(0.8161, 3, 6, 0) infeasible by my thesholds

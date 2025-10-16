@@ -107,10 +107,15 @@ function optimise_bound(k, degreex, degreez)
 end
 
 
+# optimise_bound(1,2,0) 1.2360681787742616
+# optimise_bound(1,2,2) 0.4842745455169288
+# optimise_bound(1,4,0) 1.1854435641961132
+# optimise_bound(1,4,2) 0.42913564721944875
+# optimise_bound(1,4,4) 0.42913028768618855
 
-# optimise_bound(1,2,2) 1.2469858332004644
-# optimise_bound(1,4,2) 0.6544881650514964
-# optimise_bound(1,4,4) 0.580219383485267
-# optimise_bound(1,6,4) 0.4291429653524731
+# optimise_bound(2,2,0) 2.023140372251364
+# optimise_bound(2,2,2) 0.9215679421723011
+# optimise_bound(2,4,0) 2.0045758968988387
 
-# optimise_bound(2,2,2) 2.0336551690113476
+# optimise_bound(3,2,0) 2.1081942641530804
+# optimise_bound(3,4,0) 2.061016648162922
